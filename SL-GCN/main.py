@@ -20,6 +20,7 @@ import inspect
 import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
 
+
 # class LabelSmoothingCrossEntropy(nn.Module):
 #     def __init__(self):
 #         super(LabelSmoothingCrossEntropy, self).__init__()
@@ -279,7 +280,10 @@ class Processor():
             if len(self.arg.device) > 1:
                 self.model = nn.DataParallel(
                     self.model,
-                    device_ids=self.arg.device,
+                    # 仔细检查后发现原来服务器有多个GPU，当时开启了两个进行加速运算。
+                    # device_ids=self.arg.device,
+                    # 而本地台式机只有一个GPU，调用数量超出所以报错。
+                    device_ids=[0],
                     output_device=output_device)
 
     def load_optimizer(self):
@@ -331,7 +335,7 @@ class Processor():
                 lr = self.arg.base_lr * (epoch + 1) / self.arg.warm_up_epoch
             else:
                 lr = self.arg.base_lr * (
-                    0.1 ** np.sum(epoch >= np.array(self.arg.step)))
+                        0.1 ** np.sum(epoch >= np.array(self.arg.step)))
             for param_group in self.optimizer.param_groups:
                 param_group['lr'] = lr
             return lr
@@ -482,7 +486,7 @@ class Processor():
                                 f_r.write(str(x) + ',' + str(true[i]) + '\n')
                             if x != true[i] and wrong_file is not None:
                                 f_w.write(str(index[i]) + ',' +
-                                        str(x) + ',' + str(true[i]) + '\n')
+                                          str(x) + ',' + str(true[i]) + '\n')
                 score = np.concatenate(score_frag)
 
                 if 'UCLA' in arg.Experiment_name:
@@ -500,7 +504,7 @@ class Processor():
                         pickle.dump(score_dict, f)
 
                 print('Eval Accuracy: ', accuracy,
-                    ' model: ', self.arg.model_saved_name)
+                      ' model: ', self.arg.model_saved_name)
 
                 score_dict = dict(
                     zip(self.data_loader[ln].dataset.sample_name, score))
@@ -510,18 +514,20 @@ class Processor():
                     self.print_log('\tTop{}: {:.2f}%'.format(
                         k, 100 * self.data_loader[ln].dataset.top_k(score, k)))
 
-                with open('./work_dir/' + arg.Experiment_name + '/eval_results/epoch_' + str(epoch) + '_' + str(accuracy) + '.pkl'.format(
-                        epoch, accuracy), 'wb') as f:
+                with open('./work_dir/' + arg.Experiment_name + '/eval_results/epoch_' + str(epoch) + '_' + str(
+                        accuracy) + '.pkl'.format(
+                    epoch, accuracy), 'wb') as f:
                     pickle.dump(score_dict, f)
         return np.mean(loss_value)
+
     def start(self):
         if self.arg.phase == 'train':
             self.print_log('Parameters:\n{}\n'.format(str(vars(self.arg))))
             self.global_step = self.arg.start_epoch * \
-                len(self.data_loader['train']) / self.arg.batch_size
+                               len(self.data_loader['train']) / self.arg.batch_size
             for epoch in range(self.arg.start_epoch, self.arg.num_epoch):
                 save_model = ((epoch + 1) % self.arg.save_interval == 0) or (
-                    epoch + 1 == self.arg.num_epoch)
+                        epoch + 1 == self.arg.num_epoch)
 
                 self.train(epoch, save_model=save_model)
 
@@ -575,7 +581,7 @@ if __name__ == '__main__':
     p = parser.parse_args()
     if p.config is not None:
         with open(p.config, 'r') as f:
-            default_arg = yaml.load(f)
+            default_arg = yaml.load(f, Loader=yaml.FullLoader)
         key = vars(p).keys()
         for k in default_arg.keys():
             if k not in key:

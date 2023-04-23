@@ -4,15 +4,19 @@ import torch
 from torch.utils.data import Dataset
 import sys
 import random
-sys.path.extend(['../'])
-from feeders import tools
+from . import tools
 
-flip_index = np.concatenate(([0,2,1,4,3,6,5],[17,18,19,20,21,22,23,24,25,26],[7,8,9,10,11,12,13,14,15,16]), axis=0) 
+sys.path.extend(['../'])
+
+flip_index = np.concatenate(
+    ([0, 2, 1, 4, 3, 6, 5], [17, 18, 19, 20, 21, 22, 23, 24, 25, 26], [7, 8, 9, 10, 11, 12, 13, 14, 15, 16]), axis=0)
+
 
 class Feeder(Dataset):
     def __init__(self, data_path, label_path,
                  random_choose=False, random_shift=False, random_move=False,
-                 window_size=-1, normalization=False, debug=False, use_mmap=True, random_mirror=False, random_mirror_p=0.5, is_vector=False):
+                 window_size=-1, normalization=False, debug=False, use_mmap=True, random_mirror=False,
+                 random_mirror_p=0.5, is_vector=False):
         """
         
         :param data_path: 
@@ -83,34 +87,33 @@ class Feeder(Dataset):
 
         if self.random_choose:
             data_numpy = tools.random_choose(data_numpy, self.window_size)
-            
+
         if self.random_mirror:
             if random.random() > self.random_mirror_p:
                 assert data_numpy.shape[2] == 27
-                data_numpy = data_numpy[:,:,flip_index,:]
+                data_numpy = data_numpy[:, :, flip_index, :]
                 if self.is_vector:
-                    data_numpy[0,:,:,:] = - data_numpy[0,:,:,:]
-                else: 
-                    data_numpy[0,:,:,:] = 512 - data_numpy[0,:,:,:]
+                    data_numpy[0, :, :, :] = - data_numpy[0, :, :, :]
+                else:
+                    data_numpy[0, :, :, :] = 512 - data_numpy[0, :, :, :]
 
         if self.normalization:
             # data_numpy = (data_numpy - self.mean_map) / self.std_map
             assert data_numpy.shape[0] == 3
             if self.is_vector:
-                data_numpy[0,:,0,:] = data_numpy[0,:,0,:] - data_numpy[0,:,0,0].mean(axis=0)
-                data_numpy[1,:,0,:] = data_numpy[1,:,0,:] - data_numpy[1,:,0,0].mean(axis=0)
+                data_numpy[0, :, 0, :] = data_numpy[0, :, 0, :] - data_numpy[0, :, 0, 0].mean(axis=0)
+                data_numpy[1, :, 0, :] = data_numpy[1, :, 0, :] - data_numpy[1, :, 0, 0].mean(axis=0)
             else:
-                data_numpy[0,:,:,:] = data_numpy[0,:,:,:] - data_numpy[0,:,0,0].mean(axis=0)
-                data_numpy[1,:,:,:] = data_numpy[1,:,:,:] - data_numpy[1,:,0,0].mean(axis=0)
+                data_numpy[0, :, :, :] = data_numpy[0, :, :, :] - data_numpy[0, :, 0, 0].mean(axis=0)
+                data_numpy[1, :, :, :] = data_numpy[1, :, :, :] - data_numpy[1, :, 0, 0].mean(axis=0)
 
         if self.random_shift:
             if self.is_vector:
-                data_numpy[0,:,0,:] += random.random() * 20 - 10.0
-                data_numpy[1,:,0,:] += random.random() * 20 - 10.0
+                data_numpy[0, :, 0, :] += random.random() * 20 - 10.0
+                data_numpy[1, :, 0, :] += random.random() * 20 - 10.0
             else:
-                data_numpy[0,:,:,:] += random.random() * 20 - 10.0
-                data_numpy[1,:,:,:] += random.random() * 20 - 10.0
-
+                data_numpy[0, :, :, :] += random.random() * 20 - 10.0
+                data_numpy[1, :, :, :] += random.random() * 20 - 10.0
 
         # if self.random_shift:
         #     data_numpy = tools.random_shift(data_numpy)

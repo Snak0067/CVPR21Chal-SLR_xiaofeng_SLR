@@ -41,7 +41,7 @@ step: [50]
 # training
 device: [0,1]
 phase: test
-weights: final_models/27_2/joint_epoch_226_9468.pt
+weights: final_models/joint_epoch_226_9468.pt
 keep_rate: 0.9
 only_train_epoch: 1
 batch_size: 64
