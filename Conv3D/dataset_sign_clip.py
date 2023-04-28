@@ -15,7 +15,8 @@ logger = logging.getLogger('SLR')
 
 
 class Sign_Isolated(Dataset):
-    def __init__(self, data_path, label_path, frames=16, num_classes=226, train=True, transform=None, test_clips=5):
+    def __init__(self, data_path, label_path, sample_number, frames=16, num_classes=226,
+                 train=True, transform=None, test_clips=5):
         super(Sign_Isolated, self).__init__()
         self.data_path = data_path
         self.label_path = label_path
@@ -35,6 +36,11 @@ class Sign_Isolated(Dataset):
             self.sample_names.append(line[0])
             self.data_folder.append(os.path.join(data_path, line[0]))
             self.labels.append(int(line[1]))
+        # mask进行小样本训练
+        mask = np.random.choice(25000, sample_number, replace=False).astype(int)
+        self.sample_names = self.sample_names[mask]
+        self.labels = self.labels[mask]
+        self.data_folder = self.data_folder[mask]
 
     def frame_indices_tranform(self, video_length, sample_duration):
         if video_length > sample_duration:
@@ -113,9 +119,9 @@ class Sign_Isolated(Dataset):
             logger.info(f"FileNotFoundError: {folder_path} not found,continue...")
             # 如果文件不存在，则返回一个全为零的张量或一个空字典
             if self.transform is not None:
-                return self.transform(Image.fromarray(np.zeros((self.frames, 224, 224, 3), dtype=np.uint8)))
+                return self.transform(torch.zeros((3, 32, 128, 128)))
             else:
-                return torch.zeros((self.frames, 3, 224, 224))
+                return torch.zeros((3, 32, 128, 128))
 
     def __len__(self):
         return len(self.data_folder)

@@ -77,14 +77,19 @@ if __name__ == '__main__':
     attention = False
     drop_p = 0.0
     hidden1, hidden2 = 512, 256
+
+    # sample number
+    num_training = 2000
+    num_validation = 500
+    num_test = 200
     # Load data
     transform = transforms.Compose([transforms.Resize([sample_size, sample_size]),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[0.5], std=[0.5])])
     train_set = Sign_Isolated(data_path=data_path, label_path=label_train_path, frames=sample_duration,
-                              num_classes=num_classes, train=True, transform=transform)
+                              num_classes=num_classes, train=True, transform=transform,sample_number=num_training)
     val_set = Sign_Isolated(data_path=data_path2, label_path=label_val_path, frames=sample_duration,
-                            num_classes=num_classes, train=False, transform=transform)
+                            num_classes=num_classes, train=False, transform=transform,sample_number=num_training)
     logger.info("Dataset samples: {}".format(len(train_set) + len(val_set)))
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=20, pin_memory=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=20, pin_memory=True)
