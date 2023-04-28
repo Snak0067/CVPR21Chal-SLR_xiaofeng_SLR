@@ -15,9 +15,11 @@ from train import train_epoch
 from validation_clip import val_epoch
 from collections import OrderedDict
 
+
 class LabelSmoothingCrossEntropy(nn.Module):
     def __init__(self):
         super(LabelSmoothingCrossEntropy, self).__init__()
+
     def forward(self, x, target, smoothing=0.1):
         confidence = 1. - smoothing
         logprobs = F.log_softmax(x, dim=-1)
@@ -27,12 +29,13 @@ class LabelSmoothingCrossEntropy(nn.Module):
         loss = confidence * nll_loss + smoothing * smooth_loss
         return loss.mean()
 
+
 # Path setting
 exp_name = 'rgb_final_finetune'
-data_path = "../data/train_val_frames" # path to train_val_frames
-data_path2 = "../data/test_frames" # path to test_frames
-label_train_path = "data/train_val_labels.csv" # path to train_val labels
-label_val_path = "data/test_labels_pseudo.csv" # path to test pseudo labels
+data_path = "../data/train_val_frames"  # path to train_val_frames
+data_path2 = "../data/test_frames"  # path to test_frames
+label_train_path = "data/train_val_labels.csv"  # path to train_val labels
+label_val_path = "data/test_labels_pseudo.csv"  # path to test pseudo labels
 model_path = "checkpoint/{}".format(exp_name)
 if not os.path.exists(model_path):
     os.mkdir(model_path)
@@ -42,22 +45,23 @@ log_path = "log/sign_resnet2d+1_{}_{:%Y-%m-%d_%H-%M-%S}.log".format(exp_name, da
 sum_path = "runs/sign_resnet2d+1_{}_{:%Y-%m-%d_%H-%M-%S}".format(exp_name, datetime.now())
 phase = 'Train'
 # Log to file & tensorboard writer
-logging.basicConfig(level=logging.INFO, format='%(message)s', handlers=[logging.FileHandler(log_path), logging.StreamHandler()])
+logging.basicConfig(level=logging.INFO, format='%(message)s',
+                    handlers=[logging.FileHandler(log_path), logging.StreamHandler()])
 logger = logging.getLogger('SLR')
 logger.info('Logging to file...')
 writer = SummaryWriter(sum_path)
 
 # Use specific gpus
 # os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
-os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2,3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 # Device setting
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Hyperparams
-num_classes = 226 
+num_classes = 226
 epochs = 100
 batch_size = 24
-learning_rate = 1e-4#1e-3 Train 1e-4 Finetune
+learning_rate = 1e-4  # 1e-3 Train 1e-4 Finetune
 log_interval = 80
 sample_size = 128
 sample_duration = 32
@@ -65,9 +69,11 @@ attention = False
 drop_p = 0.0
 hidden1, hidden2 = 512, 256
 
+
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
+
 
 # Train with 3DCNN
 if __name__ == '__main__':
@@ -76,12 +82,12 @@ if __name__ == '__main__':
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[0.5], std=[0.5])])
     train_set = Sign_Isolated(data_path=data_path, label_path=label_train_path, frames=sample_duration,
-        num_classes=num_classes, train=True, transform=transform)
+                              num_classes=num_classes, train=True, transform=transform)
     val_set = Sign_Isolated(data_path=data_path2, label_path=label_val_path, frames=sample_duration,
-        num_classes=num_classes, train=False, transform=transform)
-    logger.info("Dataset samples: {}".format(len(train_set)+len(val_set)))
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=24, pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=24, pin_memory=True)
+                            num_classes=num_classes, train=False, transform=transform)
+    logger.info("Dataset samples: {}".format(len(train_set) + len(val_set)))
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=20, pin_memory=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=20, pin_memory=True)
     # Create model
     model = r2plus1d_18(pretrained=True, num_classes=226)
     # load pretrained
@@ -89,15 +95,13 @@ if __name__ == '__main__':
 
     new_state_dict = OrderedDict()
     for k, v in checkpoint.items():
-        name = k[7:] # remove 'module.'
-        new_state_dict[name]=v
+        name = k[7:]  # remove 'module.'
+        new_state_dict[name] = v
     model.load_state_dict(new_state_dict)
     # if phase == 'Train':
     #     model.fc1 = nn.Linear(model.fc1.in_features, num_classes)
     print(model)
 
-
-    
     model = model.to(device)
     # Run the model parallelly
     if torch.cuda.device_count() > 1:
@@ -107,7 +111,8 @@ if __name__ == '__main__':
     # criterion = nn.CrossEntropyLoss()
     criterion = LabelSmoothingCrossEntropy()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, threshold=0.0001)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10,
+                                                           threshold=0.0001)
 
     # Start training
     if phase == 'Train':
@@ -120,10 +125,11 @@ if __name__ == '__main__':
             # Validate the model
             val_loss = val_epoch(model, criterion, val_loader, device, epoch, logger, writer)
             scheduler.step(val_loss)
-            
+
             # Save model
-            torch.save(model.state_dict(), os.path.join(model_path, "sign_resnet2d+1_epoch{:03d}.pth".format(epoch+1)))
-            logger.info("Epoch {} Model Saved".format(epoch+1).center(60, '#'))
+            torch.save(model.state_dict(),
+                       os.path.join(model_path, "sign_resnet2d+1_epoch{:03d}.pth".format(epoch + 1)))
+            logger.info("Epoch {} Model Saved".format(epoch + 1).center(60, '#'))
     elif phase == 'Test':
         logger.info("Testing Started".center(60, '#'))
         val_loss = val_epoch(model, criterion, val_loader, device, 0, logger, writer, phase=phase, exp_name=exp_name)

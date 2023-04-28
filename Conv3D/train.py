@@ -1,6 +1,7 @@
 import torch
 from sklearn.metrics import accuracy_score
 
+
 def train_epoch(model, criterion, optimizer, dataloader, device, epoch, logger, log_interval, writer):
     model.train()
     losses = []
@@ -32,14 +33,17 @@ def train_epoch(model, criterion, optimizer, dataloader, device, epoch, logger, 
         # break
 
         if (batch_idx + 1) % log_interval == 0:
-            logger.info("epoch {:3d} | iteration {:5d} | Loss {:.6f} | Acc {:.2f}%".format(epoch+1, batch_idx+1, loss.item(), score*100))
+            logger.info("epoch {:3d} | iteration {:5d} | Loss {:.6f} | Acc {:.2f}%".format(epoch + 1, batch_idx + 1,
+                                                                                           loss.item(), score * 100))
 
     # Compute the average loss & accuracy
-    training_loss = sum(losses)/len(losses)
+    training_loss = sum(losses) / len(losses)
     all_label = torch.stack(all_label, dim=0)
     all_pred = torch.stack(all_pred, dim=0)
-    training_acc = accuracy_score(all_label.squeeze().cpu().data.squeeze().numpy(), all_pred.cpu().data.squeeze().numpy())
+    training_acc = accuracy_score(all_label.squeeze().cpu().data.squeeze().numpy(),
+                                  all_pred.cpu().data.squeeze().numpy())
     # Log
-    writer.add_scalars('Loss', {'train': training_loss}, epoch+1)
-    writer.add_scalars('Accuracy', {'train': training_acc}, epoch+1)
-    logger.info("Average Training Loss of Epoch {}: {:.6f} | Acc: {:.2f}%".format(epoch+1, training_loss, training_acc*100))
+    writer.add_scalars('Loss', {'train': training_loss}, epoch + 1)
+    writer.add_scalars('Accuracy', {'train': training_acc}, epoch + 1)
+    logger.info(
+        "Average Training Loss of Epoch {}: {:.6f} | Acc: {:.2f}%".format(epoch + 1, training_loss, training_acc * 100))

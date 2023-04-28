@@ -32,10 +32,10 @@ class LabelSmoothingCrossEntropy(nn.Module):
 
 # Path setting
 exp_name = 'rgb_final_test'
-data_path = "../data/train_frames"
-data_path2 = "../data/test_frames"
-label_train_path = "data/train_labels.csv"
-label_val_path = "data/test_labels_pseudo.csv"
+data_path = "../data-prepare/data/frame/train_frame_data"
+data_path2 = "../data-prepare/data/frame/test_frame_data"
+label_train_path = "../data-prepare/data/label/train_labels.csv"
+label_val_path = "../data-prepare/data/label/test_labels.csv"
 model_path = "checkpoint/{}".format(exp_name)
 if not os.path.exists(model_path):
     os.mkdir(model_path)
@@ -53,7 +53,8 @@ writer = SummaryWriter(sum_path)
 
 # Use specific gpus
 # os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 # Device setting
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

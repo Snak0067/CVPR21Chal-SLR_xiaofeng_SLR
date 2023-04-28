@@ -26,33 +26,36 @@ if __name__ == "__main__":
     print("Let's use", torch.cuda.device_count(), "GPUs!")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Define training set
-    train_dataset = TorchDataset(istrain=True, fea_dir=opt.dataset_path, isaug = True, repeat=1)
-    train_dataloader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=32,pin_memory=True)
+    train_dataset = TorchDataset(istrain=True, fea_dir=opt.dataset_path, isaug=True, repeat=1)
+    train_dataloader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=20,
+                                  pin_memory=True)
 
     # Define test set
     test_dataset = TorchDataset(istrain=False, fea_dir=opt.dataset_path, repeat=1)
-    test_dataloader = DataLoader(test_dataset, batch_size=opt.batch_size, shuffle=False, num_workers=32,pin_memory=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=opt.batch_size, shuffle=False, num_workers=20,
+                                 pin_memory=True)
 
     # Classification criterion
-    #cls_criterion = nn.CrossEntropyLoss().to(device)
+    # cls_criterion = nn.CrossEntropyLoss().to(device)
     cls_criterion = LabelSmoothingCrossEntropy().cuda()
     # Define network
-    model =T_Pose_model(frames_number=60,joints_number=33,
-        n_classes=226
-    )
+    model = T_Pose_model(frames_number=60, joints_number=33,
+                         n_classes=226
+                         )
 
     if opt.checkpoint_model:
-        model.load_state_dict(torch.load(opt.checkpoint_model,map_location='cuda:0'))
+        model.load_state_dict(torch.load(opt.checkpoint_model, map_location='cuda:0'))
     else:
         model.init_weights()
 
     model = torch.nn.DataParallel(model)
     model = model.to(device)
-    
-    #model = model.module
+
+    # model = model.module
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr, weight_decay=opt.wd)
 
-    def test_model(epoch,global_acc1,needsave1):
+
+    def test_model(epoch, global_acc1, needsave1):
         """ Evaluate the model on the test set """
         print("")
         model.eval()
@@ -66,7 +69,6 @@ if __name__ == "__main__":
                 predictions = model(fea_sequences)
             # Compute metrics
             acc = 100 * (predictions.detach().argmax(1) == labels).cpu().numpy().mean()
-            
 
             loss = cls_criterion(predictions, labels).item()
             # Keep track of loss and accuracy
@@ -84,10 +86,12 @@ if __name__ == "__main__":
                     np.mean(test_metrics["acc"]),
                 )
             )
-        newacc =  np.mean(test_metrics["acc"])
+        newacc = np.mean(test_metrics["acc"])
         model.train()
         print("")
         return newacc
+
+
     global_acc = 0
     needsave = False
     for epoch in range(opt.num_epochs):
@@ -98,13 +102,13 @@ if __name__ == "__main__":
 
             if X.size(0) == 1:
                 continue
-            if epoch==50:
-                optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr*0.1, weight_decay=0.0)
-            if epoch==250:
-                optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr*0.01, weight_decay=0.0)
+            if epoch == 50:
+                optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr * 0.1, weight_decay=0.0)
+            if epoch == 250:
+                optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr * 0.01, weight_decay=0.0)
 
             fea_sequences = Variable(X.to(device), requires_grad=True)
-   
+
             y = y.type(torch.long)
             labels = Variable(y.to(device), requires_grad=False)
 
@@ -119,7 +123,7 @@ if __name__ == "__main__":
 
             loss.backward()
             optimizer.step()
-            #optimizer.module.step()
+            # optimizer.module.step()
             # Keep track of epoch metrics
             epoch_metrics["loss"].append(loss.item())
             epoch_metrics["acc"].append(acc)
@@ -151,11 +155,10 @@ if __name__ == "__main__":
                 torch.cuda.empty_cache()
 
         # Evaluate the model on the test set
-        newacc = test_model(epoch,global_acc,needsave)
-        
-        
+        newacc = test_model(epoch, global_acc, needsave)
+
         # Save model checkpoint
-        if global_acc<newacc:#epoch % opt.checkpoint_interval == 0:
+        if global_acc < newacc:  # epoch % opt.checkpoint_interval == 0:
             os.makedirs(opt.save_path, exist_ok=True)
             torch.save(model.module.state_dict(), f"{opt.save_path}/T_Pose_model_{epoch}_{newacc}.pth")
             sys.stdout.write(

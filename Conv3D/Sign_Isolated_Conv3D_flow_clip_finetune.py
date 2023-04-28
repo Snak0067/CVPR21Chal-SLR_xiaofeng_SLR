@@ -66,7 +66,7 @@ sample_duration = 32
 attention = False
 drop_p = 0.0
 hidden1, hidden2 = 512, 256
-num_workers = 24
+num_workers=20
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']

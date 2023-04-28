@@ -82,8 +82,8 @@ if __name__ == '__main__':
     val_set = Sign_Isolated(data_path=data_path2, label_path=label_val_path, frames=sample_duration,
         num_classes=num_classes, train=False, transform=transform)
     logger.info("Dataset samples: {}".format(len(train_set)+len(val_set)))
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=48, pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=48, pin_memory=True)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=20, pin_memory=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=20, pin_memory=True)
     # Create model
     model = r2plus1d_18(pretrained=True, num_classes=226)
     # load pretrained

@@ -30,47 +30,6 @@ class LabelSmoothingCrossEntropy(nn.Module):
         return loss.mean()
 
 
-# Path setting
-exp_name = 'rgb_final'
-data_path = "../data/train_frames"
-data_path2 = "../data/val_frames"
-label_train_path = "data/train_labels.csv"
-label_val_path = "data/val_gt.csv"
-model_path = "checkpoint/{}".format(exp_name)
-if not os.path.exists(model_path):
-    os.mkdir(model_path)
-if not os.path.exists(os.path.join('results', exp_name)):
-    os.mkdir(os.path.join('results', exp_name))
-log_path = "log/sign_resnet2d+1_{}_{:%Y-%m-%d_%H-%M-%S}.log".format(exp_name, datetime.now())
-sum_path = "runs/sign_resnet2d+1_{}_{:%Y-%m-%d_%H-%M-%S}".format(exp_name, datetime.now())
-phase = 'Train'
-# Log to file & tensorboard writer
-logging.basicConfig(level=logging.INFO, format='%(message)s',
-                    handlers=[logging.FileHandler(log_path), logging.StreamHandler()])
-logger = logging.getLogger('SLR')
-logger.info('Logging to file...')
-writer = SummaryWriter(sum_path)
-
-# Use specific gpus
-# os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
-# Device setting
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# Hyperparams
-num_classes = 226
-epochs = 100
-batch_size = 24
-learning_rate = 1e-3  # 1e-3 Train 1e-4 Finetune
-weight_decay = 1e-4  # 1e-4
-log_interval = 80
-sample_size = 128
-sample_duration = 32
-attention = False
-drop_p = 0.0
-hidden1, hidden2 = 512, 256
-
-
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
@@ -78,6 +37,46 @@ def get_lr(optimizer):
 
 # Train with 3DCNN
 if __name__ == '__main__':
+    # Path setting
+    exp_name = 'rgb_final'
+    data_path = "../data-prepare/data/frame/train_frame_data"
+    data_path2 = "../data-prepare/data/frame/val_frame_data"
+    label_train_path = "../data-prepare/data/label/train_labels.csv"
+    label_val_path = "../data-prepare/data/label/validation_labels.csv"
+    model_path = "checkpoint/{}".format(exp_name)
+    if not os.path.exists(model_path):
+        os.mkdir(model_path)
+    if not os.path.exists(os.path.join('results', exp_name)):
+        os.mkdir(os.path.join('results', exp_name))
+    log_path = "log/sign_resnet2d+1_{}_{:%Y-%m-%d_%H-%M-%S}.log".format(exp_name, datetime.now())
+    sum_path = "runs/sign_resnet2d+1_{}_{:%Y-%m-%d_%H-%M-%S}".format(exp_name, datetime.now())
+    phase = 'Train'
+    # Log to file & tensorboard writer
+    logging.basicConfig(level=logging.INFO, format='%(message)s',
+                        handlers=[logging.FileHandler(log_path), logging.StreamHandler()])
+    logger = logging.getLogger('SLR')
+    logger.info('Logging to file...')
+    writer = SummaryWriter(sum_path)
+
+    # Use specific gpus
+    # os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    # Device setting
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Hyperparams
+    num_classes = 226
+    epochs = 100
+    batch_size = 24
+    learning_rate = 1e-3  # 1e-3 Train 1e-4 Finetune
+    weight_decay = 1e-4  # 1e-4
+    log_interval = 80
+    sample_size = 128
+    sample_duration = 32
+    attention = False
+    drop_p = 0.0
+    hidden1, hidden2 = 512, 256
     # Load data
     transform = transforms.Compose([transforms.Resize([sample_size, sample_size]),
                                     transforms.ToTensor(),
@@ -87,8 +86,8 @@ if __name__ == '__main__':
     val_set = Sign_Isolated(data_path=data_path2, label_path=label_val_path, frames=sample_duration,
                             num_classes=num_classes, train=False, transform=transform)
     logger.info("Dataset samples: {}".format(len(train_set) + len(val_set)))
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=24, pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=24, pin_memory=True)
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=20, pin_memory=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=20, pin_memory=True)
     # Create model
 
     model = r2plus1d_18(pretrained=True, num_classes=500)
@@ -101,7 +100,7 @@ if __name__ == '__main__':
     model.load_state_dict(new_state_dict)
     if phase == 'Train':
         model.fc1 = nn.Linear(model.fc1.in_features, num_classes)
-    print(model)
+    # print(model)
 
     model = model.to(device)
     # Run the model parallelly
