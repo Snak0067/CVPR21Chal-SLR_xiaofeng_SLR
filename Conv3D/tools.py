@@ -8,6 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
+import multiprocessing as mp
+import torch.distributed as dist
+
 
 def get_label_and_pred(model, dataloader, device):
     all_label = []
@@ -41,7 +44,7 @@ def plot_confusion_matrix(model, dataloader, device, save_path='confmat.png', no
     if normalize:
         confmat = confmat.astype('float') / confmat.sum(axis=1)[:, np.newaxis]
     # Draw matrix
-    plt.figure(figsize=(20,20))
+    plt.figure(figsize=(20, 20))
     # confmat = np.random.rand(100,100)
     plt.imshow(confmat, interpolation='nearest', cmap=plt.cm.Blues)
     plt.colorbar()
@@ -68,21 +71,21 @@ def plot_confusion_matrix(model, dataloader, device, save_path='confmat.png', no
 
 def visualize_attn(I, c):
     # Image
-    img = I.permute((1,2,0)).cpu().numpy()
+    img = I.permute((1, 2, 0)).cpu().numpy()
     # Heatmap
     N, C, H, W = c.size()
-    a = F.softmax(c.view(N,C,-1), dim=2).view(N,C,H,W)
-    up_factor = 128/H
+    a = F.softmax(c.view(N, C, -1), dim=2).view(N, C, H, W)
+    up_factor = 128 / H
     # print(up_factor, I.size(), c.size())
     if up_factor > 1:
         a = F.interpolate(a, scale_factor=up_factor, mode='bilinear', align_corners=False)
     attn = utils.make_grid(a, nrow=4, normalize=True, scale_each=True)
-    attn = attn.permute((1,2,0)).mul(255).byte().cpu().numpy()
+    attn = attn.permute((1, 2, 0)).mul(255).byte().cpu().numpy()
     attn = cv2.applyColorMap(attn, cv2.COLORMAP_JET)
     attn = cv2.cvtColor(attn, cv2.COLOR_BGR2RGB)
     # Add the heatmap to the image
     vis = 0.6 * img + 0.4 * attn
-    return torch.from_numpy(vis).permute(2,0,1)
+    return torch.from_numpy(vis).permute(2, 0, 1)
 
 
 def plot_attention_map(model, dataloader, device):
@@ -95,18 +98,18 @@ def plot_attention_map(model, dataloader, device):
             # get images
             inputs = data['data'].to(device)
             if batch_idx == 0:
-                images = inputs[0:16,:,:,:,:]
-                I = utils.make_grid(images[:,:,0,:,:], nrow=4, normalize=True, scale_each=True)
+                images = inputs[0:16, :, :, :, :]
+                I = utils.make_grid(images[:, :, 0, :, :], nrow=4, normalize=True, scale_each=True)
                 writer.add_image('origin', I)
                 _, c1, c2, c3, c4 = model(images)
                 # print(I.shape, c1.shape, c2.shape, c3.shape, c4.shape)
-                attn1 = visualize_attn(I, c1[:,:,0,:,:])
+                attn1 = visualize_attn(I, c1[:, :, 0, :, :])
                 writer.add_image('attn1', attn1)
-                attn2 = visualize_attn(I, c2[:,:,0,:,:])
+                attn2 = visualize_attn(I, c2[:, :, 0, :, :])
                 writer.add_image('attn2', attn2)
-                attn3 = visualize_attn(I, c3[:,:,0,:,:])
+                attn3 = visualize_attn(I, c3[:, :, 0, :, :])
                 writer.add_image('attn3', attn3)
-                attn4 = visualize_attn(I, c4[:,:,0,:,:])
+                attn4 = visualize_attn(I, c4[:, :, 0, :, :])
                 writer.add_image('attn4', attn4)
                 break
 
@@ -118,33 +121,48 @@ Reference:
 https://holianh.github.io/portfolio/Cach-tinh-WER/
 https://github.com/imalic3/python-word-error-rate
 """
+
+
 def wer(r, h):
     # initialisation
-    d = np.zeros((len(r)+1)*(len(h)+1), dtype=np.uint8)
-    d = d.reshape((len(r)+1, len(h)+1))
-    for i in range(len(r)+1):
-        for j in range(len(h)+1):
+    d = np.zeros((len(r) + 1) * (len(h) + 1), dtype=np.uint8)
+    d = d.reshape((len(r) + 1, len(h) + 1))
+    for i in range(len(r) + 1):
+        for j in range(len(h) + 1):
             if i == 0:
                 d[0][j] = j
             elif j == 0:
                 d[i][0] = i
 
     # computation
-    for i in range(1, len(r)+1):
-        for j in range(1, len(h)+1):
-            if r[i-1] == h[j-1]:
-                d[i][j] = d[i-1][j-1]
+    for i in range(1, len(r) + 1):
+        for j in range(1, len(h) + 1):
+            if r[i - 1] == h[j - 1]:
+                d[i][j] = d[i - 1][j - 1]
             else:
-                substitution = d[i-1][j-1] + 1
-                insertion = d[i][j-1] + 1
-                deletion = d[i-1][j] + 1
+                substitution = d[i - 1][j - 1] + 1
+                insertion = d[i][j - 1] + 1
+                deletion = d[i - 1][j] + 1
                 d[i][j] = min(substitution, insertion, deletion)
 
     return float(d[len(r)][len(h)]) / len(r) * 100
 
 
+def init_process(rank, size, backend='nccl'):
+    # 初始化进程并设置共享内存
+    torch.cuda.set_device(rank % torch.cuda.device_count())
+    # 配置进程以共享GPU内存
+    torch.cuda.empty_cache()
+    mp.set_start_method('spawn')
+    dist.init_process_group(backend, rank=rank, world_size=size)
+
+
 if __name__ == '__main__':
     # Calculate WER
-    r = [1,2,3,4]
-    h = [1,1,3,5,6]
-    print(wer(r, h))
+    import torch
+
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        print(torch.cuda.get_device_name(device))
+    else:
+        print("GPU not found.")

@@ -9,11 +9,15 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from torch.utils.tensorboard import SummaryWriter
 import torchvision.transforms as transforms
+
+import Conv3D.tools as tool
 from models.Conv3D import r2plus1d_18
 from dataset_sign_clip import Sign_Isolated
 from train import train_epoch
 from validation_clip import val_epoch
 from collections import OrderedDict
+
+import multiprocessing as mp
 
 
 class LabelSmoothingCrossEntropy(nn.Module):
@@ -58,17 +62,10 @@ if __name__ == '__main__':
     logger.info('Logging to file...')
     writer = SummaryWriter(sum_path)
 
-    # Use specific gpus
-    # os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
-    # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    # Device setting
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
     # Hyperparams
     num_classes = 226
     epochs = 100
-    batch_size = 24
+    batch_size = 8
     learning_rate = 1e-3  # 1e-3 Train 1e-4 Finetune
     weight_decay = 1e-4  # 1e-4
     log_interval = 80
@@ -78,23 +75,32 @@ if __name__ == '__main__':
     drop_p = 0.0
     hidden1, hidden2 = 512, 256
 
-    # sample number
-    num_training = 2000
-    num_validation = 500
-    num_test = 200
+    # 分布式训练，共享GPU内存
+    # torch.multiprocessing.set_start_method('spawn')  # 设置启动方式为spawn
+    # num_processes = 20
+    # processes = []
+    # for rank in range(num_processes):
+    #     p = mp.Process(target=tool.init_process, args=(rank, num_processes))
+    #     p.start()
+    #     processes.append(p)
+    # for p in processes:
+    #     p.join()
+    #
+    # torch.multiprocessing.set_sharing_strategy('file_system')
+
     # Load data
     transform = transforms.Compose([transforms.Resize([sample_size, sample_size]),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[0.5], std=[0.5])])
     train_set = Sign_Isolated(data_path=data_path, label_path=label_train_path, frames=sample_duration,
-                              num_classes=num_classes, train=True, transform=transform,sample_number=num_training)
+                              num_classes=num_classes, train=True, transform=transform)
     val_set = Sign_Isolated(data_path=data_path2, label_path=label_val_path, frames=sample_duration,
-                            num_classes=num_classes, train=False, transform=transform,sample_number=num_training)
+                            num_classes=num_classes, train=False, transform=transform)
     logger.info("Dataset samples: {}".format(len(train_set) + len(val_set)))
-    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=20, pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=20, pin_memory=True)
-    # Create model
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
+    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
 
+    # Create model
     model = r2plus1d_18(pretrained=True, num_classes=500)
     # load pretrained
     checkpoint = torch.load('pretrained/slr_resnet2d+1.pth')
@@ -103,16 +109,27 @@ if __name__ == '__main__':
         name = k[7:]  # remove 'module.'
         new_state_dict[name] = v
     model.load_state_dict(new_state_dict)
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if device.type == 'cuda':
+        # 将模型移动到 GPU
+        model.to(device)  # 将模型移动到 GPU
+
     if phase == 'Train':
         model.fc1 = nn.Linear(model.fc1.in_features, num_classes)
-    # print(model)
-
-    model = model.to(device)
     # Run the model parallelly
+    """
+    并行运行模型意味着使用多个GPU来加快训练过程。nn.DataParallel模块用于在多个GPU上并行化模型。
+    当torch.cuda.device_count（）>1时，模型被封装在nn.DataParallel模块中，
+    该模块将输入批次在可用GPU之间平均划分，并并行计算梯度。这可以显著减少在大型数据集上训练深度神经网络所需的时间。
+    """
     if torch.cuda.device_count() > 1:
         logger.info("Using {} GPUs".format(torch.cuda.device_count()))
-        model = nn.DataParallel(model)
-    # Create loss criterion & optimizer
+        # 并行运行模型
+    model = nn.DataParallel(model)
+    model.to(device)
+
+    """ Create loss criterion & optimizer """
     # criterion = nn.CrossEntropyLoss()
     criterion = LabelSmoothingCrossEntropy()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
@@ -121,7 +138,7 @@ if __name__ == '__main__':
 
     # Start training
     if phase == 'Train':
-        logger.info("Training Started".center(60, '#'))
+        logger.info(" Training Started ".center(60, '#'))
         for epoch in range(epochs):
             print('lr: ', get_lr(optimizer))
             # Train the model
