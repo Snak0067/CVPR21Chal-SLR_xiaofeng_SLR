@@ -4,6 +4,7 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/Conv3D/log" />
       <excludeFolder url="file://$MODULE_DIR$/data-prepare/data" />
+      <excludeFolder url="file://$MODULE_DIR$/Conv3D/checkpoint" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

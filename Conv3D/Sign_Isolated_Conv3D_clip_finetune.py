@@ -32,10 +32,10 @@ class LabelSmoothingCrossEntropy(nn.Module):
 
 # Path setting
 exp_name = 'rgb_final_finetune'
-data_path = "../data/train_val_frames"  # path to train_val_frames
-data_path2 = "../data/test_frames"  # path to test_frames
-label_train_path = "data/train_val_labels.csv"  # path to train_val labels
-label_val_path = "data/test_labels_pseudo.csv"  # path to test pseudo labels
+data_path = "../data-prepare/data/frame/train_frame_data"
+data_path2 = "../data-prepare/data/frame/test_frame_data"
+label_train_path = "../data-prepare/data/label/train_labels.csv"  # path to train_val labels
+label_val_path = "../data-prepare/data/label/test_labels.csv"  # path to test pseudo labels
 model_path = "checkpoint/{}".format(exp_name)
 if not os.path.exists(model_path):
     os.mkdir(model_path)
@@ -51,16 +51,10 @@ logger = logging.getLogger('SLR')
 logger.info('Logging to file...')
 writer = SummaryWriter(sum_path)
 
-# Use specific gpus
-# os.environ["CUDA_VISIBLE_DEVICES"]="4,5,6,7"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
-# Device setting
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 # Hyperparams
 num_classes = 226
 epochs = 100
-batch_size = 24
+batch_size = 8 # 4个显卡 batch_size 24
 learning_rate = 1e-4  # 1e-3 Train 1e-4 Finetune
 log_interval = 80
 sample_size = 128
@@ -91,22 +85,23 @@ if __name__ == '__main__':
     # Create model
     model = r2plus1d_18(pretrained=True, num_classes=226)
     # load pretrained
-    checkpoint = torch.load('final_models/val_rgb_final.pth')
+    checkpoint = torch.load('final_models/val_rgb_final_trainAcc_08694_valAcc_08353.pth')
 
     new_state_dict = OrderedDict()
     for k, v in checkpoint.items():
         name = k[7:]  # remove 'module.'
         new_state_dict[name] = v
     model.load_state_dict(new_state_dict)
-    # if phase == 'Train':
-    #     model.fc1 = nn.Linear(model.fc1.in_features, num_classes)
-    print(model)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if device.type == 'cuda':
+        # 将模型移动到 GPU
+        model.to(device)  # 将模型移动到 GPU
 
     model = model.to(device)
     # Run the model parallelly
     if torch.cuda.device_count() > 1:
         logger.info("Using {} GPUs".format(torch.cuda.device_count()))
-        model = nn.DataParallel(model)
+    model = nn.DataParallel(model)
     # Create loss criterion & optimizer
     # criterion = nn.CrossEntropyLoss()
     criterion = LabelSmoothingCrossEntropy()

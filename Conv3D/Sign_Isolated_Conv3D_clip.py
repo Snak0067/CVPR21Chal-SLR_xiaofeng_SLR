@@ -75,19 +75,6 @@ if __name__ == '__main__':
     drop_p = 0.0
     hidden1, hidden2 = 512, 256
 
-    # 分布式训练，共享GPU内存
-    # torch.multiprocessing.set_start_method('spawn')  # 设置启动方式为spawn
-    # num_processes = 20
-    # processes = []
-    # for rank in range(num_processes):
-    #     p = mp.Process(target=tool.init_process, args=(rank, num_processes))
-    #     p.start()
-    #     processes.append(p)
-    # for p in processes:
-    #     p.join()
-    #
-    # torch.multiprocessing.set_sharing_strategy('file_system')
-
     # Load data
     transform = transforms.Compose([transforms.Resize([sample_size, sample_size]),
                                     transforms.ToTensor(),
