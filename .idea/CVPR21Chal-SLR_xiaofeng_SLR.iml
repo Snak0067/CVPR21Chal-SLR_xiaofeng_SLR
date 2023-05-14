@@ -5,7 +5,7 @@
       <excludeFolder url="file://$MODULE_DIR$/Conv3D/log" />
       <excludeFolder url="file://$MODULE_DIR$/data-prepare/data" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="pytorch-gpu (2)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">
