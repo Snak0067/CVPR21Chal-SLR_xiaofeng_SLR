@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2023/5/15 10:48
 # @Author  : Xiaofeng
-# @File    : C3D.py
+# @File    : C3D_train.py
 import os
 import sys
 from datetime import datetime
@@ -31,7 +31,8 @@ class LabelSmoothingCrossEntropy(nn.Module):
     def forward(self, x, target, smoothing=0.1):
         confidence = 1. - smoothing
         logprobs = F.log_softmax(x, dim=-1)
-        nll_loss = -logprobs.gather(dim=-1, index=target.unsqueeze(1))
+        index = target.unsqueeze(1)
+        nll_loss = -logprobs.gather(dim=-1, index=index)
         nll_loss = nll_loss.squeeze(1)
         smooth_loss = -logprobs.mean(dim=-1)
         loss = confidence * nll_loss + smoothing * smooth_loss
@@ -68,7 +69,7 @@ if __name__ == '__main__':
 
     # Hyperparams
     # num_classes = 226
-    num_classes = 6
+    num_classes = 7
     epochs = 10
     batch_size = 8
     learning_rate = 1e-3  # 1e-3 Train 1e-4 Finetune
@@ -78,7 +79,7 @@ if __name__ == '__main__':
     sample_duration = 32
     attention = False
     drop_p = 0.0
-    hidden1, hidden2 = 512, 256
+    # hidden1, hidden2 = 512, 256
 
     # Load data
     transform = transforms.Compose([transforms.Resize([sample_size, sample_size]),
@@ -93,8 +94,8 @@ if __name__ == '__main__':
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
 
     # Create model
-    model = r2plus1d_18(pretrained=True, num_classes=6)
-    # load pretrained
+    model = r2plus1d_18(pretrained=True, num_classes=500)
+    # load pretrained 为了进一步提高识别率，对于 RGB 帧，我们在中文手语 (CSL) 数据集[69]上预训练模型。我们发现在 CSL 上进行预训练可以提高模型的收敛性，并将最终精度提高 1% 左右
     checkpoint = torch.load('../Conv3D/pretrained/slr_resnet2d+1.pth')
     new_state_dict = OrderedDict()
     for k, v in checkpoint.items():

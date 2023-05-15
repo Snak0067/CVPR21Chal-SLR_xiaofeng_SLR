@@ -9,7 +9,7 @@ def train_epoch(model, criterion, optimizer, dataloader, device, epoch, logger, 
     all_label = []
     all_pred = []
 
-    for batch_idx, data in enumerate(tqdm(dataloader)):
+    for batch_idx, data in enumerate(dataloader):
 
         # get the inputs and labels
         inputs, labels = data['data'].to(device), data['label'].to(device)
@@ -42,7 +42,7 @@ def train_epoch(model, criterion, optimizer, dataloader, device, epoch, logger, 
     training_acc = accuracy_score(all_label.squeeze().cpu().data.numpy(), all_pred.cpu().data.numpy())
 
     # Log
-    # writer.add_scalars('Loss', {'train': training_loss}, epoch + 1)
-    # writer.add_scalars('Accuracy', {'train': training_acc}, epoch + 1)
+    writer.add_scalars('Loss', {'train': training_loss}, epoch + 1)
+    writer.add_scalars('Accuracy', {'train': training_acc}, epoch + 1)
     logger.info(
         "Average Training Loss of Epoch {}: {:.6f} | Acc: {:.2f}%".format(epoch + 1, training_loss, training_acc * 100))
