@@ -48,8 +48,8 @@ if not os.path.exists(model_path):
     os.mkdir(model_path)
 if not os.path.exists(os.path.join('results', exp_name)):
     os.mkdir(os.path.join('results', exp_name))
-log_path = "log/sign_resnet2d+1_test_{}_{:%Y-%m-%d_%H-%M-%S}.log".format(exp_name, datetime.now())
-sum_path = "runs/sign_resnet2d+1_test_{}_{:%Y-%m-%d_%H-%M-%S}".format(exp_name, datetime.now())
+log_path = "log/myModel_sign_CNN3D_{}_{:%Y-%m-%d_%H-%M-%S}.log".format(exp_name, datetime.now())
+sum_path = "runs/myModel_sign_CNN3D_{}_{:%Y-%m-%d_%H-%M-%S}".format(exp_name, datetime.now())
 # phase = 'Test'
 phase = 'Train'
 # Log to file & tensorboard writer
@@ -71,7 +71,7 @@ num_classes = 7  # 226
 epochs = 10
 # batch_size = 16
 batch_size = 8
-learning_rate = 1e-4  # 1e-4 Train 1e-5 Finetune
+learning_rate = 1e-3  # 1e-4 Train 1e-5 Finetune
 log_interval = 80
 sample_size = 128
 sample_duration = 32
@@ -106,18 +106,6 @@ if __name__ == '__main__':
     #                 attention=attention, num_classes=num_classes).to(device)
     # model = resnet50(pretrained=True, progress=True, sample_size=sample_size, sample_duration=sample_duration,
     #                 attention=attention, num_classes=num_classes).to(device)
-
-    # model = r2plus1d_18(pretrained=True, num_classes=7)
-    # load pretrained
-    # checkpoint = torch.load('checkpoint/rgb_final/sign_resnet2d+1_epoch010.pth') # 小样本训练的训练模型权重
-    # checkpoint = torch.load('../Conv3D/pretrained/slr_resnet2d+1.pth')
-    # new_state_dict = OrderedDict()
-    # for k, v in checkpoint.items():
-    #     name = k[7:]  # remove 'module.'
-    #     new_state_dict[name] = v
-    # model.load_state_dict(new_state_dict)
-    # if phase == 'Train':
-    #     model.fc1 = nn.Linear(model.fc1.in_features, num_classes)
     # print(model)
 
     model = model.to(device)
@@ -143,7 +131,7 @@ if __name__ == '__main__':
 
             # Save model
             torch.save(model.state_dict(),
-                       os.path.join(model_path, "sign_resnet2d+1_epoch{:03d}.pth".format(epoch + 1)))
+                       os.path.join(model_path, "sign_CNN3D_epoch{:03d}.pth".format(epoch + 1)))
             logger.info("Epoch {} Model Saved".format(epoch + 1).center(60, '#'))
     elif phase == 'Test':
         logger.info("Testing Started".center(60, '#'))

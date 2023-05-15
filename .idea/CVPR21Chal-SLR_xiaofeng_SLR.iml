@@ -5,6 +5,9 @@
       <excludeFolder url="file://$MODULE_DIR$/Conv3D/log" />
       <excludeFolder url="file://$MODULE_DIR$/data-prepare/data" />
       <excludeFolder url="file://$MODULE_DIR$/Conv3D/checkpoint" />
+      <excludeFolder url="file://$MODULE_DIR$/model_comparision/log" />
+      <excludeFolder url="file://$MODULE_DIR$/model_comparision/results" />
+      <excludeFolder url="file://$MODULE_DIR$/model_comparision/runs" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

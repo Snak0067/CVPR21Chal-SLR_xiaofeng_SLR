@@ -101,13 +101,6 @@ if __name__ == '__main__':
     logger.info("Dataset samples: {}".format(len(train_set) + len(val_set)))
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
-    # Create model
-    # model = CNN3D(sample_size=sample_size, sample_duration=sample_duration, drop_p=drop_p,
-    #             hidden1=hidden1, hidden2=hidden2, num_classes=num_classes).to(device)
-    # model = resnet18(pretrained=True, progress=True, sample_size=sample_size, sample_duration=sample_duration,
-    #                 attention=attention, num_classes=num_classes).to(device)
-    # model = resnet50(pretrained=True, progress=True, sample_size=sample_size, sample_duration=sample_duration,
-    #                 attention=attention, num_classes=num_classes).to(device)
 
     model = r2plus1d_18(pretrained=True, num_classes=7)
     # load pretrained

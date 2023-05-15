@@ -25,7 +25,7 @@ class CNN3D(nn.Module):
         self.relu3 = nn.ReLU()
         self.pool3 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
 
-        self.fc1 = nn.Linear(256 * (sample_duration // 8) * (sample_size // 32) * (sample_size // 32), hidden1)
+        self.fc1 = nn.Linear(256 * (sample_duration // 8) * (sample_size // 32) * sample_size, hidden1)
         self.relu4 = nn.ReLU()
         self.dropout1 = nn.Dropout(p=drop_p)
 
