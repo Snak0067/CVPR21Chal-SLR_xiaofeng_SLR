@@ -33,8 +33,8 @@ def train_epoch(model, criterion, optimizer, dataloader, device, epoch, logger, 
         loss.backward()
         optimizer.step()
 
-        # logger.info("epoch {:3d} | iteration {:5d} | Loss {:.6f} | Acc {:.2f}%".format(epoch + 1, batch_idx + 1,
-        #                                                                                loss.item(), score * 100))
+        logger.info("epoch {:3d} | iteration {:5d} | Loss {:.6f} | Acc {:.2f}%".format(epoch + 1, batch_idx + 1,
+                                                                                       loss.item(), score * 100))
     print("Compute the average loss & accuracy")
     training_loss = sum(losses) / len(losses)
     all_label = torch.stack(all_label, dim=0).to(device)

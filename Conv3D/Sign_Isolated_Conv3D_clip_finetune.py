@@ -48,7 +48,7 @@ phase = 'Train'
 logging.basicConfig(level=logging.INFO, format='%(message)s',
                     handlers=[logging.FileHandler(log_path), logging.StreamHandler()])
 logger = logging.getLogger('SLR')
-logger.info('Logging to file...')
+# logger.info('Logging to file...')
 writer = SummaryWriter(sum_path)
 
 # Hyperparams
