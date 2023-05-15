@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time    : 2023/5/15 14:59
-# @Author  : Xiaofeng
-# @File    : CNN3D_Train.py
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # @Time    : 2023/5/15 14:11
 # @Author  : Xiaofeng
 # @File    : C3D_test.py
@@ -24,6 +19,8 @@ from Conv3D.dataset_sign_clip import Sign_Isolated
 from Conv3D.train import train_epoch
 from Conv3D.validation_clip import val_epoch
 from collections import OrderedDict
+
+from model_comparision.models.CNN3D import CNN3D
 
 
 class LabelSmoothingCrossEntropy(nn.Module):
@@ -53,7 +50,8 @@ if not os.path.exists(os.path.join('results', exp_name)):
     os.mkdir(os.path.join('results', exp_name))
 log_path = "log/sign_resnet2d+1_test_{}_{:%Y-%m-%d_%H-%M-%S}.log".format(exp_name, datetime.now())
 sum_path = "runs/sign_resnet2d+1_test_{}_{:%Y-%m-%d_%H-%M-%S}".format(exp_name, datetime.now())
-phase = 'Test'
+# phase = 'Test'
+phase = 'Train'
 # Log to file & tensorboard writer
 logging.basicConfig(level=logging.INFO, format='%(message)s',
                     handlers=[logging.FileHandler(log_path), logging.StreamHandler()])
@@ -73,7 +71,7 @@ num_classes = 7  # 226
 epochs = 10
 # batch_size = 16
 batch_size = 8
-learning_rate = 1e-5  # 1e-4 Train 1e-5 Finetune
+learning_rate = 1e-4  # 1e-4 Train 1e-5 Finetune
 log_interval = 80
 sample_size = 128
 sample_duration = 32
@@ -102,31 +100,28 @@ if __name__ == '__main__':
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
     # Create model
-    # model = CNN3D(sample_size=sample_size, sample_duration=sample_duration, drop_p=drop_p,
-    #             hidden1=hidden1, hidden2=hidden2, num_classes=num_classes).to(device)
+    model = CNN3D(sample_size=sample_size, sample_duration=sample_duration, drop_p=drop_p,
+                  hidden1=hidden1, hidden2=hidden2, num_classes=num_classes)
     # model = resnet18(pretrained=True, progress=True, sample_size=sample_size, sample_duration=sample_duration,
     #                 attention=attention, num_classes=num_classes).to(device)
     # model = resnet50(pretrained=True, progress=True, sample_size=sample_size, sample_duration=sample_duration,
     #                 attention=attention, num_classes=num_classes).to(device)
 
-    model = r2plus1d_18(pretrained=True, num_classes=7)
+    # model = r2plus1d_18(pretrained=True, num_classes=7)
     # load pretrained
-    checkpoint = torch.load('checkpoint/rgb_final/sign_resnet2d+1_epoch010.pth')
-
-    new_state_dict = OrderedDict()
-    for k, v in checkpoint.items():
-        name = k[7:]  # remove 'module.'
-        new_state_dict[name] = v
-    model.load_state_dict(new_state_dict)
+    # checkpoint = torch.load('checkpoint/rgb_final/sign_resnet2d+1_epoch010.pth') # 小样本训练的训练模型权重
+    # checkpoint = torch.load('../Conv3D/pretrained/slr_resnet2d+1.pth')
+    # new_state_dict = OrderedDict()
+    # for k, v in checkpoint.items():
+    #     name = k[7:]  # remove 'module.'
+    #     new_state_dict[name] = v
+    # model.load_state_dict(new_state_dict)
     # if phase == 'Train':
     #     model.fc1 = nn.Linear(model.fc1.in_features, num_classes)
     # print(model)
 
     model = model.to(device)
-    # Run the model parallelly
-    if torch.cuda.device_count() > 1:
-        logger.info("Using {} GPUs".format(torch.cuda.device_count()))
-        model = nn.DataParallel(model)
+    model = nn.DataParallel(model)
     # Create loss criterion & optimizer
     # criterion = nn.CrossEntropyLoss()
     criterion = LabelSmoothingCrossEntropy()
