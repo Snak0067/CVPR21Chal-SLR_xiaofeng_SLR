@@ -95,6 +95,7 @@ if __name__ == '__main__':
 
     # Create model
     model = r2plus1d_18(pretrained=True, num_classes=500)
+
     # load pretrained 为了进一步提高识别率，对于 RGB 帧，我们在中文手语 (CSL) 数据集[69]上预训练模型。我们发现在 CSL 上进行预训练可以提高模型的收敛性，并将最终精度提高 1% 左右
     checkpoint = torch.load('../Conv3D/pretrained/slr_resnet2d+1.pth')
     new_state_dict = OrderedDict()
