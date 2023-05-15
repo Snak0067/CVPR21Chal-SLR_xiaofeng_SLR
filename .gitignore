@@ -112,3 +112,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#log
+model_comparision/log
+model_comparision/results
+model_comparision/runs
+
