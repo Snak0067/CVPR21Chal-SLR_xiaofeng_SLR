@@ -39,14 +39,6 @@ class Sign_Isolated(Dataset):
             self.sample_names.append(line[0])
             self.data_folder.append(complete_data_path)
             self.labels.append(int(line[1]))
-        # # mask进行小样本训练
-        # if train:
-        #     mask = np.random.choice(25000, 2000, replace=False).astype(int)
-        # else:
-        #     mask = np.random.choice(3000, 500, replace=False).astype(int)
-        # self.sample_names = np.array(self.sample_names)[mask]
-        # self.labels = np.array(self.labels)[mask]
-        # self.data_folder = np.array(self.data_folder)[mask]
 
     def frame_indices_tranform(self, video_length, sample_duration):
         if video_length > sample_duration:

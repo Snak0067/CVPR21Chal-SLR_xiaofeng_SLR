@@ -15,6 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from Conv3D.train import train_epoch
 from Conv3D.validation_clip import val_epoch
+from model_comparision.models.I3D_train_epoch import i3d_train_epoch
 from model_comparision.tools.dataset_tools import get_dataset
 from models.I3D import InceptionI3d
 
@@ -87,17 +88,18 @@ if __name__ == '__main__':
     # Load data
     train_loader, val_loader = get_dataset()
     # Create model
-    model = InceptionI3d(num_classes=num_classes, in_channels=3)
+    model = InceptionI3d(num_classes=400, in_channels=3)
     model.load_state_dict(torch.load('weights/rgb_imagenet.pt'))
-
+    model.replace_logits(num_classes)
+    print(model)
     model = model.to(device)
+    model.cuda()
     model = nn.DataParallel(model)
     # Create loss criterion & optimizer
     # criterion = nn.CrossEntropyLoss()
     criterion = LabelSmoothingCrossEntropy()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=ADAM_WEIGHT_DECAY, eps=ADAM_EPS)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10,
-                                                           threshold=0.0001)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-8)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=5, factor=0.3)
 
     # Start training
     if phase == 'Train':
@@ -113,8 +115,9 @@ if __name__ == '__main__':
 
             # Save model
             torch.save(model.state_dict(),
-                       os.path.join(model_path, "sign_I3D_epoch{:03d}.pth".format(epoch + 1)))
+                       os.path.join(model_path, "sign_i3d_epoch{:03d}.pth".format(epoch + 1)))
             logger.info("Epoch {} Model Saved".format(epoch + 1).center(60, '#'))
+
     elif phase == 'Test':
         logger.info("Testing Started".center(60, '#'))
         val_loss = val_epoch(model, criterion, val_loader, device, 0, logger, writer, phase=phase, exp_name=exp_name)

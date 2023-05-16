@@ -225,7 +225,6 @@ class InceptionI3d(nn.Module):
         self._spatial_squeeze = spatial_squeeze
         self._final_endpoint = final_endpoint
         self.logits = None
-
         if self._final_endpoint not in self.VALID_ENDPOINTS:
             raise ValueError('Unknown final endpoint %s' % self._final_endpoint)
 
@@ -305,7 +304,7 @@ class InceptionI3d(nn.Module):
         if self._final_endpoint == end_point: return
 
         end_point = 'Logits'
-        self.avg_pool = nn.AvgPool3d(kernel_size=[2, 7, 7],
+        self.avg_pool = nn.AvgPool3d(kernel_size=[2, 2, 2],
                                      stride=(1, 1, 1))
         self.dropout = nn.Dropout(dropout_keep_prob)
         self.logits = Unit3D(in_channels=384 + 384 + 128 + 128, output_channels=self._num_classes,
@@ -315,7 +314,6 @@ class InceptionI3d(nn.Module):
                              use_batch_norm=False,
                              use_bias=True,
                              name='logits')
-
         self.build()
 
     def replace_logits(self, num_classes):
@@ -352,13 +350,12 @@ class InceptionI3d(nn.Module):
         for end_point in tune_endpoints:
             if end_point in self.end_points:
                 x = self._modules[end_point](x)  # use _modules to work with dataparallel
-
-        # head
         x = self.logits(self.dropout(self.avg_pool(x)))
-        if self._spatial_squeeze:
-            logits = x.squeeze(3).squeeze(3)
-        # logits is batch X time X classes, which is what we want to work with
-        return logits
+        out = x.flatten(1)
+        out = self.dropout(out)
+        fc = nn.Linear(out.size(1), self._num_classes).to('cuda')
+        out = fc(out)
+        return out
 
     def extract_features(self, x):
         for end_point in self.VALID_ENDPOINTS:

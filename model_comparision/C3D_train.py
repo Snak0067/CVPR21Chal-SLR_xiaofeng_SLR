@@ -103,7 +103,7 @@ if __name__ == '__main__':
         name = k[7:]  # remove 'module.'
         new_state_dict[name] = v
     model.load_state_dict(new_state_dict)
-
+    print(model)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if device.type == 'cuda':
         # 将模型移动到 GPU
