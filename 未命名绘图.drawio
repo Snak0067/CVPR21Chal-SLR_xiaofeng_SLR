@@ -1,0 +1,25 @@
+<mxfile host="app.diagrams.net" modified="2023-06-14T13:41:48.375Z" agent="Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36" etag="KSdqPX4TzyfQh4MGuW2z" version="21.3.8" type="github">
+  <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
+    <mxGraphModel dx="927" dy="566" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="oQxmIc9lAPI7KhZRpuhM-14" value="Pool" style="swimlane;childLayout=stackLayout;resizeParent=1;resizeParentMax=0;startSize=20;horizontal=0;horizontalStack=1;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="150" y="90" width="380" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="oQxmIc9lAPI7KhZRpuhM-15" value="用户" style="swimlane;startSize=20;" vertex="1" parent="oQxmIc9lAPI7KhZRpuhM-14">
+          <mxGeometry x="20" width="120" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="oQxmIc9lAPI7KhZRpuhM-16" value="前端系统" style="swimlane;startSize=20;" vertex="1" parent="oQxmIc9lAPI7KhZRpuhM-14">
+          <mxGeometry x="140" width="120" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="oQxmIc9lAPI7KhZRpuhM-17" value="后端系统" style="swimlane;startSize=20;" vertex="1" parent="oQxmIc9lAPI7KhZRpuhM-14">
+          <mxGeometry x="260" width="120" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="oQxmIc9lAPI7KhZRpuhM-20" value="算法" style="swimlane;startSize=20;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="530" y="90" width="120" height="480" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
